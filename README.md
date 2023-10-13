@@ -1,71 +1,60 @@
-# Fabric Example Mod
+# BookMod
 
-- [Quick start guide](#quick-start-guide)
-  - [Introduction to the folder structure](#introduction-to-the-folder-structure)
-  - [Creating your mod](#creating-your-mod)
-  - [Useful gradle commands](#useful-gradle-commands)
-- [More info](#more-info)
-- [License](#license)
+A mod providing all sorts of fun tools for modifying written books in Minecraft versions 1.3 to 1.4.2.
 
-## Quick start guide
+## Installing
 
-### Introduction to the folder structure
+1) Install [Legacy Fabric](https://legacyfabric.net/downloads.html) for Minecraft 1.3, 1.3.1, 1.3.2, 1.4, 1.4.1, or 1.4.2.
+2) Download the latest jar from the [latest releases](https://github.com/Captain-S0L0/bookmod/releases)
+3) Plop that into your .minecraft/mods folder
+4) Enjoy!
 
-**Build files:**
+## Features
 
-| File                | Description                                              |
-| ------------------- | -------------------------------------------------------- |
-| `build.gradle`      | Configures the compilation process.                      |
-| `gradle.properties` | Contains properties for Minecraft, fabric, and your mod. |
-| `settings.gradle`   | Configures the plugin repositories.                      |
+Whenever you open a Book & Quill, you'll now be presented with a plethora of buttons and options to modify your book!
 
-**Fabric files:**
+![](https://raw.githubusercontent.com/Captain-S0L0/bookmod/master/.github/maingui.png)
 
-These files are located at `src/main/resources`.
+The very left column contains many "presets" that one will likely find useful. These are:
 
-| File                    | Description                              | Additional information                                                                                                |
-| ----------------------- | ---------------------------------------- | --------------------------------------------------------------------------------------------------------------------- |
-| `fabric.mod.json`       | Contains metadata about your mod.        | [wiki:fabric_mod_json_spec](https://fabricmc.net/wiki/documentation:fabric_mod_json_spec)                             |
-| `modid.mixins.json`     | Contains a list of all your mixin files. | [wiki:mixin_registration](https://fabricmc.net/wiki/tutorial:mixin_registration)                                      |
-| `assets/modid/icon.png` | The icon of your mod.                    | [wiki:fabric_mod_json_spec#icon](https://fabricmc.net/wiki/documentation:fabric_mod_json_spec?s[]=icon#custom_fields) |
+* High Data: fill the book with random 3 byte unicode characters
+* Tattered: set the tattered flag
+* Unbreakable: set the unbreakable flag
+* No Ench: remove all enchantments
+* No Attr: remove all attributes
+* No Lore: remove all lore
+* 32k: add all enchantments at level 32767
+* Utility Ench: add Thorns 32767, Sharpness 32767, Fire Aspect 32767, Efficiency 32767, and Curse of Vanishing 1
+* Looting: add Thorns 32767, Sharpness 32767, Fire Aspect 32767, Efficiency 32767, Looting 1000, and Curse of Vanishing 1
+* XLooting: add Thorns 32767, Sharpness 32767, Fire Aspect 32767, Looting 32767, Efficiency 32767, and Curse of Vanishing 1
+* Utility Attr: add movementSpeed + 100%, attackDamage + ∞, and maxHealth + 100%
+* OP Attr: add movementSpeed + 100%, attackDamage + ∞, maxHealth + 900%, attackKnockback + 900%, luck + ∞, knockbackResistance + 10, armor + 100, and armorToughness + 100
 
+To the right of the presets are a whole bunch of buttons for inserting formatting codes, both into the book's pages and into relavent fields.
 
-### Creating your mod
+To the right of the book's pages are a whole bunch of text boxes and buttons for adding your own enchantments, attributes, and lore. To enable the buttons, fill out the fields in a valid format:
 
-First of you must replace all occurrences of `modid` with the id of your mod.
+* For enchantments, enter a valid Short (-32768 to 32767) into both the ID and Level fields
+* For lore, enter a string that isn't empty
+* For attributes, enter a name that isn't empty, an amount that parses into a double, and an operator of either 0, 1, or 2. See [the minecraft wiki](https://minecraft.wiki/w/Attribute) for more information on custom attributes. Do note that you need to use the pre-flattening IDs.
 
-If your mod doesn't use mixins you can safely remove the mixin entry in your `fabric.mod.json` as well as delete any `*.mixin.json` files.
+Below the book's pages are the familiar buttons for signing the book and finishing editing, but there are two more buttons relating to this mod's most powerful feature: direct NBT editing of the book!
 
-This template has the legacy fabric api included in it's build script, more info about the api can be found at it's [github repo](https://github.com/Legacy-Fabric/fabric).
-If you know what you are doing you can also safely remove the api from the build script as it isn't required.
+* Clear NBT: clear the book of all data, including text
+* Edit NBT: open the NBT editing window
 
-### Useful gradle commands
+![](https://raw.githubusercontent.com/Captain-S0L0/bookmod/master/.github/nbtgui.png)
 
-```sh
-# Compile your mod
-./gradlew build
+Simmilar to a command block, one can just simply edit the book's NBT in any way they desire! The only real limits are the size of the book edit packet, which cannot exceed 32767 bytes, but who cares!
 
-# Remove old build files
-./gradlew clean
+When you want to finally sign your book, the signing screen will look a little different too:
 
-# Generate Minecraft sources
-./gradlew genSources
+![](https://raw.githubusercontent.com/Captain-S0L0/bookmod/master/.github/signinggui.png)
 
-# Launch a modded Minecraft client
-./gradlew runClient
+The formatting buttons are still available to use on this screen, so one can format both the title and the author fields! Do note that the title tag is limited to no more than 16 characters in length, including formatting codes. However, the author tag has practically no limits besides the packet size limit, so go wild! (Yes, you can fit the entire Bee movie script!)
 
-# Kill gradle if it's doing stupid things
-./gradlew --stop
-```
+Of course, as this mod can add many item tags that aren't used in 1.3/1.4, for example, custom attributes, you will need to update a world from these versions into versions where these tags are actually used by the game for them to appear in game (mindblowing, I know!).
 
-## More info
+Anyways, that's basically "all" this mod has. Have fun. Or not. Soon enough, you'll be making a lot of books that probably look something like this:
 
-Additional tutorials and tips can be found in the [wiki](https://github.com/Legacy-Fabric/fabric-example-mod/wiki).
-
-For more detailed setup instructions please see the [fabric wiki](https://fabricmc.net/wiki/tutorial:setup).
-
-If you are new to fabric or Minecraft modding in general then [this wiki page](https://fabricmc.net/wiki/tutorial:primer) may help you.
-
-## License
-
-This template is available under the CC0 license. Feel free to learn from it and incorporate it in your own projects.
+![](https://raw.githubusercontent.com/Captain-S0L0/bookmod/master/.github/bookexample.png)

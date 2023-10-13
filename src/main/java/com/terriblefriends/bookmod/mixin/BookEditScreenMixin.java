@@ -324,7 +324,7 @@ public abstract class BookEditScreenMixin extends Screen {
                 this.pages.method_1217(new NbtString("1", ""));
                 this.item.putSubNbt("pages", this.pages);
                 this.totalPages = 1;
-                this.currentPage = 1;
+                this.currentPage = 0;
             }
             else if (button.id == this.highDataButton.id) {
                 NbtList highDataPages = new NbtList();
@@ -471,7 +471,6 @@ public abstract class BookEditScreenMixin extends Screen {
                         enchantsToAdd.put((short)7, (short) 32767);
                         enchantsToAdd.put((short)16, (short) 32767);
                         enchantsToAdd.put((short)20, (short) 32767);
-                        enchantsToAdd.put((short)22, (short) 32767);
                         enchantsToAdd.put((short)32, (short) 32767);
                         enchantsToAdd.put((short)71, (short) 1);
                         break;
@@ -479,7 +478,6 @@ public abstract class BookEditScreenMixin extends Screen {
                         enchantsToAdd.put((short)7, (short) 32767);
                         enchantsToAdd.put((short)16, (short) 32767);
                         enchantsToAdd.put((short)20, (short) 32767);
-                        enchantsToAdd.put((short)22, (short) 32767);
                         enchantsToAdd.put((short)32, (short) 32767);
                         enchantsToAdd.put((short)21, (short) 1000);
                         enchantsToAdd.put((short)71, (short) 1);
@@ -519,8 +517,8 @@ public abstract class BookEditScreenMixin extends Screen {
                         attributesToAdd.add(new Attribute("generic.movementSpeed", 1, 2));
                         attributesToAdd.add(new Attribute("generic.attackDamage", Double.POSITIVE_INFINITY, 0));
                         attributesToAdd.add(new Attribute("generic.maxHealth", 9, 2));
-                        attributesToAdd.add(new Attribute("generic.attackKnockback", 99, 2));
-                        attributesToAdd.add(new Attribute("generic.luck", 9, 2));
+                        attributesToAdd.add(new Attribute("generic.attackKnockback", 9, 2));
+                        attributesToAdd.add(new Attribute("generic.luck", Double.POSITIVE_INFINITY, 0));
                         attributesToAdd.add(new Attribute("generic.knockbackResistance", 1, 0));
                         attributesToAdd.add(new Attribute("generic.armor", 100, 0));
                         attributesToAdd.add(new Attribute("generic.armorToughness", 100, 0));

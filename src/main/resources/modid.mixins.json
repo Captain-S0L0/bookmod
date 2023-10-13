@@ -1,0 +1,24 @@
+{
+  "required": true,
+  "minVersion": "0.8",
+  "package": "com.terriblefriends.bookmod.mixin",
+  "compatibilityLevel": "JAVA_8",
+  "mixins": [
+    "accessor.NbtCompoundAccessor",
+    "nbt.NbtByteArrayMixin",
+    "nbt.NbtByteMixin",
+    "nbt.NbtCompoundMixin",
+    "nbt.NbtDoubleMixin",
+    "nbt.NbtFloatMixin",
+    "nbt.NbtListMixin",
+    "nbt.NbtLongMixin",
+    "nbt.NbtShortMixin",
+    "nbt.NbtStringMixin"
+  ],
+  "client": [
+    "BookEditScreenMixin"
+  ],
+  "injectors": {
+    "defaultRequire": 1
+  }
+}

@@ -1,0 +1,28 @@
+{
+  "schemaVersion": 1,
+  "id": "bookmod",
+  "version": "${version}",
+  "name": "BookMod",
+  "description": "Provide tools for books from Minecraft 1.3 to 1.4.2",
+  "authors": [
+    "Captain_S0L0"
+  ],
+  "contact": {
+    "sources": ""
+  },
+  "license": "MIT",
+  "icon": "assets/modid/icon.png",
+  "environment": "*",
+  "entrypoints": {
+    "main": [
+    ]
+  },
+  "mixins": [
+    "modid.mixins.json"
+  ],
+  "depends": {
+    "fabricloader": ">=0.14.19",
+    "minecraft": ["1.3.X","1.4","1.4.1","1.4.2"]
+  },
+  "accessWidener": "bookmod.accesswidener"
+}

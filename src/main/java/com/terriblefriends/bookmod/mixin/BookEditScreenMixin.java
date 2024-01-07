@@ -75,11 +75,11 @@ public abstract class BookEditScreenMixin extends Screen {
     private ButtonWidget loreAddButton;
 
     //button math bitwise bits
-    private static final int generalButtonBit = 0x8;
-    private static final int presetMiscButtonBit = 0x10;
-    private static final int presetEnchantButtonBit = 0x20;
-    private static final int presetAttributeButtonBit = 0x40;
-    private static final int formattingButtonBit = 0x80;
+    private static final int generalButtonBit = (1 << 31);
+    private static final int presetMiscButtonBit = (1 << 30);
+    private static final int presetEnchantButtonBit = (1 << 29);
+    private static final int presetAttributeButtonBit = (1 << 28);
+    private static final int formattingButtonBit = (1 << 27);
 
     //ui element arrays for efficiency
     private TextFieldWidget[] textFields = null;

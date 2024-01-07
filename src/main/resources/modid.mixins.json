@@ -5,6 +5,7 @@
   "compatibilityLevel": "JAVA_8",
   "mixins": [
     "accessor.NbtCompoundAccessor",
+    "accessor.NbtListAccessor",
     "nbt.NbtByteArrayMixin",
     "nbt.NbtByteMixin",
     "nbt.NbtCompoundMixin",

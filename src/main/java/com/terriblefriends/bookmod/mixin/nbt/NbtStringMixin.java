@@ -12,7 +12,20 @@ public class NbtStringMixin {
 
     @Inject(at=@At("HEAD"),method="toString",cancellable = true)
     private void bookmod$writeToJson(CallbackInfoReturnable<String> cir) {
-        cir.setReturnValue(""+NS_instance.value);
+        StringBuilder stringbuilder = new StringBuilder("\"");
+
+        for (int i = 0; i < NS_instance.value.length(); ++i)
+        {
+            char c0 = NS_instance.value.charAt(i);
+
+            if (c0 == '\\' || c0 == '"')
+            {
+                stringbuilder.append('\\');
+            }
+
+            stringbuilder.append(c0);
+        }
+        cir.setReturnValue(stringbuilder.append('"').toString());
         cir.cancel();
     }
 }

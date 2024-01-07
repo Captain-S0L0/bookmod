@@ -6,6 +6,7 @@ import com.terriblefriends.bookmod.NbtException;
 import com.terriblefriends.bookmod.mixin.accessor.NbtCompoundAccessor;
 import com.terriblefriends.bookmod.mixin.accessor.NbtListAccessor;
 import net.minecraft.client.class_411;
+import net.minecraft.client.font.TextRenderer;
 import net.minecraft.client.gui.screen.Screen;
 import net.minecraft.client.gui.screen.ingame.BookEditScreen;
 import net.minecraft.client.gui.widget.ButtonWidget;
@@ -394,7 +395,7 @@ public abstract class BookEditScreenMixin extends Screen {
                             for (int character = 0; character < 218; character++) {
                                 pageBuilder.append((char)(highDataRandom.nextInt(63488)+2048));
                             }
-                            highDataPages.method_1217(new NbtString(""+page,pageBuilder.toString()));
+                            highDataPages.method_1217(new NbtString(""+page, pageBuilder.toString()));
                         }
                         this.pages = highDataPages;
                         this.totalPages = 50;
@@ -652,6 +653,21 @@ public abstract class BookEditScreenMixin extends Screen {
         }
 
         return !fieldFocused;
+    }
+
+    @Redirect(at=@At(value="INVOKE", target="Lnet/minecraft/nbt/NbtString;toString()Ljava/lang/String;"), method="getCurrentPageContent")
+    private String bookmod$getCurrentPageContentNotToString(NbtString instance) {
+        return instance.value;
+    }
+
+    @Redirect(at=@At(value="INVOKE", target="Lnet/minecraft/nbt/NbtString;toString()Ljava/lang/String;"), method="render")
+    private String bookmod$renderCurrentPageContentNotToString(NbtString instance) {
+        return instance.value;
+    }
+
+    @Redirect(at=@At(value="INVOKE", target="Lnet/minecraft/client/font/TextRenderer;getHeightSplit(Ljava/lang/String;I)I"), method="writeText")
+    private int bookmod$overrideTextRenderWidthLimit(TextRenderer instance, String width, int i) {
+        return 0;
     }
 
     private void sendBookData(boolean signing) {

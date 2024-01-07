@@ -75,11 +75,11 @@ public abstract class BookEditScreenMixin extends Screen {
     private ButtonWidget loreAddButton;
 
     //button math bitwise bits
-    private static final int generalButtonBit = (1 << 31);
-    private static final int presetMiscButtonBit = (1 << 30);
-    private static final int presetEnchantButtonBit = (1 << 29);
-    private static final int presetAttributeButtonBit = (1 << 28);
-    private static final int formattingButtonBit = (1 << 27);
+    private static final int generalButtonBit = (1 << 30);
+    private static final int presetMiscButtonBit = (1 << 29);
+    private static final int presetEnchantButtonBit = (1 << 28);
+    private static final int presetAttributeButtonBit = (1 << 27);
+    private static final int formattingButtonBit = (1 << 26);
 
     //ui element arrays for efficiency
     private TextFieldWidget[] textFields = null;
@@ -384,7 +384,7 @@ public abstract class BookEditScreenMixin extends Screen {
 
             //handle misc buttons
             else if ((button.id & presetMiscButtonBit) > 0) {
-                switch (button.id ^ generalButtonBit) {
+                switch (button.id ^ presetMiscButtonBit) {
                     case 1:
                         //high data
                         NbtList highDataPages = new NbtList();

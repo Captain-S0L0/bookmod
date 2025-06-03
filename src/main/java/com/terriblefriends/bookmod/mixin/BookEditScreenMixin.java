@@ -5,6 +5,7 @@ import com.terriblefriends.bookmod.JsonNbtTools;
 import com.terriblefriends.bookmod.NbtException;
 import com.terriblefriends.bookmod.mixin.accessor.NbtCompoundAccessor;
 import com.terriblefriends.bookmod.mixin.accessor.NbtListAccessor;
+import com.terriblefriends.bookmod.surrogate.TextFieldWidgetSurrogate;
 import net.minecraft.client.class_411;
 import net.minecraft.client.font.TextRenderer;
 import net.minecraft.client.gui.screen.Screen;
@@ -20,6 +21,7 @@ import net.minecraft.network.packet.c2s.play.CustomPayloadC2SPacket;
 import org.spongepowered.asm.mixin.Final;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Shadow;
+import org.spongepowered.asm.mixin.Unique;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.Redirect;
@@ -31,6 +33,7 @@ import java.util.*;
 
 @Mixin(BookEditScreen.class)
 public abstract class BookEditScreenMixin extends Screen {
+    @Unique
     private static final boolean NBT_PAGE_EDIT = Boolean.parseBoolean(System.getProperty("bookmod.nbtPageEdit"));
 
     @Shadow @Final private boolean writeable;
@@ -54,37 +57,57 @@ public abstract class BookEditScreenMixin extends Screen {
     @Shadow protected abstract void updateButtons();
 
     //custom author
+    @Unique
     private TextFieldWidget customAuthorText;
 
     //NBT editor
+    @Unique
     private TextFieldWidget nbtText;
+    @Unique
     private boolean editingNbt = false;
 
     //enchantment adder
+    @Unique
     private TextFieldWidget enchantmentIdText;
+    @Unique
     private TextFieldWidget enchantmentLevelText;
+    @Unique
     private ButtonWidget enchantmentAddButton;
 
     //attribute adder
+    @Unique
     private TextFieldWidget attributeNameText;
+    @Unique
     private TextFieldWidget attributeAmountText;
+    @Unique
     private TextFieldWidget attributeOperatorText;
+    @Unique
     private ButtonWidget attributeAddButton;
 
     //lore adder
+    @Unique
     private TextFieldWidget loreText;
+    @Unique
     private ButtonWidget loreAddButton;
 
     //button math bitwise bits
+    @Unique
     private static final int generalButtonBit = (1 << 30);
+    @Unique
     private static final int presetMiscButtonBit = (1 << 29);
+    @Unique
     private static final int presetEnchantButtonBit = (1 << 28);
+    @Unique
     private static final int presetAttributeButtonBit = (1 << 27);
+    @Unique
     private static final int formattingButtonBit = (1 << 26);
 
     //ui element arrays for efficiency
+    @Unique
     private TextFieldWidget[] textFields = null;
+    @Unique
     private ButtonWidget[] formattingButtons = null;
+    @Unique
     private ButtonWidget[] editOnlyButtons = null;
 
     @Inject(at=@At(value="INVOKE",target="Lnet/minecraft/client/gui/screen/ingame/BookEditScreen;updateButtons()V",shift= At.Shift.BEFORE),method="init")
@@ -154,10 +177,14 @@ public abstract class BookEditScreenMixin extends Screen {
 
             //text fields
             this.customAuthorText = new TextFieldWidget(this.textRenderer, this.width / 2 - 100, 192+27, 200, 20);
+            ((TextFieldWidgetSurrogate)this.customAuthorText).bookmod$setDisableInvalidStripping(true);
             this.customAuthorText.setMaxLength(65536);
             this.nbtText = new TextFieldWidget(this.textRenderer, this.width / 2 - 100, 192+27, 200, 20);
+            ((TextFieldWidgetSurrogate)this.nbtText).bookmod$setDisableInvalidStripping(true);
+            ((TextFieldWidgetSurrogate)this.nbtText).bookmod$setDisableFormatting(true);
             this.nbtText.setMaxLength(65536);
             this.loreText = new TextFieldWidget(this.textRenderer, this.width / 2 +76, 64, 93, 20);
+            ((TextFieldWidgetSurrogate)this.loreText).bookmod$setDisableInvalidStripping(true);
             this.loreText.setMaxLength(65536);
             this.enchantmentIdText = new TextFieldWidget(this.textRenderer, this.width / 2 +76, 12, 45, 20);
             this.enchantmentIdText.setMaxLength(6);
@@ -354,7 +381,7 @@ public abstract class BookEditScreenMixin extends Screen {
                             double attributeAmount = Double.parseDouble(this.attributeAmountText.getText());
                             int attributeOperation = Integer.parseInt(this.attributeOperatorText.getText());
 
-                            if (attributeName.length() == 0) {
+                            if (attributeName.isEmpty()) {
                                 this.field_1229.inGameHud.getChatHud().method_898("§4[BookMod] Error! No attribute name!");
                                 return;
                             }
@@ -436,7 +463,7 @@ public abstract class BookEditScreenMixin extends Screen {
                             if (this.item.getNbt().getCompound("display").contains("Lore")) {
                                 ((NbtCompoundAccessor)this.item.getNbt().getCompound("display")).bookmod$getData().remove("Lore");
                             }
-                            if (this.item.getNbt().getCompound("display").values().size() == 0) {
+                            if (this.item.getNbt().getCompound("display").values().isEmpty()) {
                                 ((NbtCompoundAccessor)this.item.getNbt()).bookmod$getData().remove("display");
                             }
                         }
@@ -595,6 +622,13 @@ public abstract class BookEditScreenMixin extends Screen {
         super.mouseClicked(mouseX, mouseY, button);
 
         if (this.writeable) {
+            //if we press a formatting button, return early to prevent text field deselection
+            for (ButtonWidget buttonWidget : this.formattingButtons) {
+                if (buttonWidget.method_894(this.field_1229, mouseX, mouseY)) {
+                    return;
+                }
+            }
+
             for (TextFieldWidget field : this.textFields) {
                 if (field.isVisible()) {
                     field.mouseClicked(mouseX, mouseY, button);
@@ -613,20 +647,12 @@ public abstract class BookEditScreenMixin extends Screen {
             }
 
             if (this.editingNbt) {
-                this.nbtText.render();
                 this.textRenderer.method_956("NBT", this.width / 2 + 104, 192 + 33, 0xFFFFFF);
             }
             else if (this.signing) {
-                this.customAuthorText.render();
                 this.textRenderer.method_956("Author", this.width / 2 + 104, 192 + 33, 0xFFFFFF);
             }
             else {
-                this.loreText.render();
-                this.enchantmentIdText.render();
-                this.enchantmentLevelText.render();
-                this.attributeNameText.render();
-                this.attributeAmountText.render();
-                this.attributeOperatorText.render();
                 this.textRenderer.method_956("ID", this.width / 2 + 95, 3, 0xFFFFFF);
                 this.textRenderer.method_956("Level", this.width / 2 + 134, 3, 0xFFFFFF);
                 this.textRenderer.method_956("Lore", this.width / 2 + 110, 55, 0xFFFFFF);
@@ -670,13 +696,14 @@ public abstract class BookEditScreenMixin extends Screen {
         return 0;
     }
 
+    @Unique
     private void sendBookData(boolean signing) {
         if (this.writeable && this.pages != null) {
             //clear empty pages
             while (this.pages.size() > 1) {
                 NbtString pageTag = (NbtString) this.pages.method_1218(this.pages.size() - 1);
 
-                if (pageTag.value != null && pageTag.value.length() != 0) {
+                if (pageTag.value != null && pageTag.value.isEmpty()) {
                     break;
                 }
 
@@ -700,7 +727,7 @@ public abstract class BookEditScreenMixin extends Screen {
                 payloadId = "MC|BSign";
 
                 //if we didn't enter a custom author, use the current player
-                if (!customAuthorText.getText().equals("")) {
+                if (!customAuthorText.getText().isEmpty()) {
                     this.item.putSubNbt("author", new NbtString("author", customAuthorText.getText()));
                 }
                 else {
@@ -730,9 +757,10 @@ public abstract class BookEditScreenMixin extends Screen {
         }
     }
 
+    @Unique
     private void updateAddButtonStates() {
         if (this.writeable && !this.editingNbt && !this.signing) {
-            this.loreAddButton.active = this.loreText.getText().length() > 0;
+            this.loreAddButton.active = !this.loreText.getText().isEmpty();
 
             try {
                 Short.parseShort(this.enchantmentIdText.getText());
@@ -747,7 +775,7 @@ public abstract class BookEditScreenMixin extends Screen {
                 Double.parseDouble(this.attributeAmountText.getText());
                 int attributeOperation = Integer.parseInt(this.attributeOperatorText.getText());
 
-                this.attributeAddButton.active = this.attributeNameText.getText().length() > 0 && attributeOperation >= 0 && attributeOperation <= 2;
+                this.attributeAddButton.active = !this.attributeNameText.getText().isEmpty() && attributeOperation >= 0 && attributeOperation <= 2;
             } catch (NumberFormatException e) {
                 this.attributeAddButton.active = false;
             }

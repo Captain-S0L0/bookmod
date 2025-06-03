@@ -4,6 +4,12 @@
   "package": "com.terriblefriends.bookmod.mixin",
   "compatibilityLevel": "JAVA_8",
   "mixins": [
+  ],
+  "client": [
+    "BookEditScreenMixin",
+    "TextFieldWidgetMixin",
+    "TextRendererMixin",
+    "WrittenBookItemMixin",
     "accessor.NbtCompoundAccessor",
     "accessor.NbtListAccessor",
     "nbt.NbtByteArrayMixin",
@@ -15,9 +21,6 @@
     "nbt.NbtLongMixin",
     "nbt.NbtShortMixin",
     "nbt.NbtStringMixin"
-  ],
-  "client": [
-    "BookEditScreenMixin"
   ],
   "injectors": {
     "defaultRequire": 1

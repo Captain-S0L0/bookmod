@@ -703,7 +703,7 @@ public abstract class BookEditScreenMixin extends Screen {
             while (this.pages.size() > 1) {
                 NbtString pageTag = (NbtString) this.pages.method_1218(this.pages.size() - 1);
 
-                if (pageTag.value != null && pageTag.value.isEmpty()) {
+                if (pageTag.value != null && !pageTag.value.isEmpty()) {
                     break;
                 }
 

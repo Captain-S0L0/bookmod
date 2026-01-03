@@ -4,7 +4,7 @@ A mod providing all sorts of fun tools for modifying written books in Minecraft 
 
 ## Installing
 
-1) Install [Legacy Fabric](https://legacyfabric.net/downloads.html) for Minecraft 1.3, 1.3.1, 1.3.2, 1.4, 1.4.1, or 1.4.2.
+1) Install [Ornithe](https://ornithemc.net/) for Minecraft 1.3 to 1.4.2. Snapshots for those versions also work!
 2) Download the latest jar from the [latest releases](https://github.com/Captain-S0L0/bookmod/releases)
 3) Plop that into your .minecraft/mods folder
 4) Enjoy!

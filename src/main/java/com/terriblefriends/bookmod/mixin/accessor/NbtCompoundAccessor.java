@@ -8,6 +8,6 @@ import java.util.Map;
 
 @Mixin(NbtCompound.class)
 public interface NbtCompoundAccessor {
-    @Accessor("data")
+    @Accessor("elements")
     Map bookmod$getData();
 }

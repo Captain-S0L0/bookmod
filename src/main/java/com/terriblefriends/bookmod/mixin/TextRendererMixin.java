@@ -1,7 +1,7 @@
 package com.terriblefriends.bookmod.mixin;
 
 import com.terriblefriends.bookmod.surrogate.TextRendererSurrogate;
-import net.minecraft.client.font.TextRenderer;
+import net.minecraft.client.render.TextRenderer;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Shadow;
 import org.spongepowered.asm.mixin.Unique;
@@ -12,7 +12,7 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 
 @Mixin(TextRenderer.class)
 public class TextRendererMixin implements TextRendererSurrogate {
-    @Shadow private byte[] glyphWidths;
+    @Shadow private byte[] glyphSizes;
 
     @Unique
     private boolean disableFormatting = false;
@@ -23,11 +23,11 @@ public class TextRendererMixin implements TextRendererSurrogate {
         this.disableFormatting = v;
     }
 
-    @Inject(at=@At(value = "RETURN", ordinal = 0), method="getCharWidth", cancellable = true)
+    @Inject(at=@At(value = "RETURN", ordinal = 0), method="getWidth(C)I", cancellable = true)
     private void bookmod$checkDisabledFormatting(char par1, CallbackInfoReturnable<Integer> cir) {
         if (this.disableFormatting && par1 == 167 && cir.getReturnValueI() == -1) {
-            int var3 = this.glyphWidths[167] >>> 4;
-            int var4 = this.glyphWidths[167] & 15;
+            int var3 = this.glyphSizes[167] >>> 4;
+            int var4 = this.glyphSizes[167] & 15;
             if (var4 > 7) {
                 var4 = 15;
                 var3 = 0;
@@ -40,7 +40,7 @@ public class TextRendererMixin implements TextRendererSurrogate {
         }
     }
 
-    @Redirect(at=@At(value="INVOKE", target="Ljava/lang/String;length()I", ordinal = 1), method="draw")
+    @Redirect(method="drawLayer(Ljava/lang/String;Z)V", at=@At(value="INVOKE", target="Ljava/lang/String;length()I", ordinal = 1))
     private int bookmod$checkDisabledFormatting2(String instance) {
         if (this.disableFormatting) {
             return 0;
@@ -50,7 +50,7 @@ public class TextRendererMixin implements TextRendererSurrogate {
         }
     }
 
-    @Redirect(at=@At(value="INVOKE", target="Lnet/minecraft/client/font/TextRenderer;getFormattingOnly(Ljava/lang/String;)Ljava/lang/String;"), method="wrapStringToWidth")
+    @Redirect(method="insertLineBreaks", at=@At(value="INVOKE", target="Lnet/minecraft/client/render/TextRenderer;isolateFormatting(Ljava/lang/String;)Ljava/lang/String;"))
     private String bookmod$checkDisabledFormatting3(String text) {
         if (this.disableFormatting) {
             return "";

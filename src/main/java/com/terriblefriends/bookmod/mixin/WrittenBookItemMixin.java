@@ -8,7 +8,7 @@ import org.spongepowered.asm.mixin.injection.Redirect;
 
 @Mixin(WrittenBookItem.class)
 public class WrittenBookItemMixin {
-    @Redirect(at=@At(value="INVOKE", target="Lnet/minecraft/nbt/NbtString;toString()Ljava/lang/String;"), method="getDisplayName")
+    @Redirect(method = "getName", at=@At(value="INVOKE", target="Lnet/minecraft/nbt/NbtString;toString()Ljava/lang/String;"))
     private String bookmod$getDisplayNameNotToString(NbtString instance) {
         return instance.value;
     }

@@ -11,20 +11,20 @@ import java.util.List;
 
 @Mixin(NbtList.class)
 public class NbtListMixin {
-    @Shadow private List value;
+    @Shadow private List elements;
 
     @Inject(at=@At("HEAD"),method="toString",cancellable = true)
     private void bookmod$writeToJson(CallbackInfoReturnable<String> cir) {
         StringBuilder stringbuilder = new StringBuilder("[");
 
-        for (int i = 0; i < this.value.size(); ++i)
+        for (int i = 0; i < this.elements.size(); ++i)
         {
             if (i != 0)
             {
                 stringbuilder.append(',');
             }
 
-            stringbuilder.append(this.value.get(i));
+            stringbuilder.append(this.elements.get(i));
         }
 
         stringbuilder.append(']');

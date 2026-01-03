@@ -17,6 +17,7 @@
     "nbt.NbtCompoundMixin",
     "nbt.NbtDoubleMixin",
     "nbt.NbtFloatMixin",
+    "nbt.NbtIntArrayMixin",
     "nbt.NbtListMixin",
     "nbt.NbtLongMixin",
     "nbt.NbtShortMixin",

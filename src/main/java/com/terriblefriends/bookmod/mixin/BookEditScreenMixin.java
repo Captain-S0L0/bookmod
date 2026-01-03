@@ -6,18 +6,19 @@ import com.terriblefriends.bookmod.NbtException;
 import com.terriblefriends.bookmod.mixin.accessor.NbtCompoundAccessor;
 import com.terriblefriends.bookmod.mixin.accessor.NbtListAccessor;
 import com.terriblefriends.bookmod.surrogate.TextFieldWidgetSurrogate;
-import net.minecraft.client.class_411;
-import net.minecraft.client.font.TextRenderer;
 import net.minecraft.client.gui.screen.Screen;
-import net.minecraft.client.gui.screen.ingame.BookEditScreen;
+import net.minecraft.client.gui.screen.inventory.BookEditScreen;
+import net.minecraft.client.gui.screen.inventory.BookEditScreen__BookButton;
 import net.minecraft.client.gui.widget.ButtonWidget;
 import net.minecraft.client.gui.widget.TextFieldWidget;
-import net.minecraft.entity.player.PlayerEntity;
+import net.minecraft.client.render.TextRenderer;
+import net.minecraft.entity.living.player.PlayerEntity;
 import net.minecraft.item.Item;
 import net.minecraft.item.ItemStack;
 import net.minecraft.nbt.*;
-import net.minecraft.network.Packet;
-import net.minecraft.network.packet.c2s.play.CustomPayloadC2SPacket;
+import net.minecraft.network.packet.CustomPayloadPacket;
+import net.minecraft.network.packet.Packet;
+import org.objectweb.asm.Opcodes;
 import org.spongepowered.asm.mixin.Final;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Shadow;
@@ -36,24 +37,25 @@ public abstract class BookEditScreenMixin extends Screen {
     @Unique
     private static final boolean NBT_PAGE_EDIT = Boolean.parseBoolean(System.getProperty("bookmod.nbtPageEdit"));
 
-    @Shadow @Final private boolean writeable;
+    @Shadow @Final private boolean unsigned;
     @Shadow private boolean signing;
     @Shadow private ButtonWidget doneButton;
     @Shadow private ButtonWidget signButton;
     @Shadow private ButtonWidget finalizeButton;
     @Shadow private ButtonWidget cancelButton;
     @Shadow private String title;
-    @Shadow private int totalPages;
+    @Shadow private int verticalMargin; // actually total pages
     @Shadow private int currentPage;
-    @Shadow private NbtList pages;
+    @Shadow private NbtList pageList;
     //next page button
-    @Shadow private class_411 field_1364;
+    @Shadow private BookEditScreen__BookButton nextPageButton;
     //previous page button
-    @Shadow private class_411 field_1365;
-    @Shadow @Final private ItemStack item;
+    @Shadow private BookEditScreen__BookButton previousPageButton;
+
+    @Shadow @Final private ItemStack book;
     @Shadow @Final private PlayerEntity reader;
 
-    @Shadow protected abstract void writeText(String text);
+    @Shadow protected abstract void handleClipboardPaste(String text);
     @Shadow protected abstract void updateButtons();
 
     //custom author
@@ -110,9 +112,9 @@ public abstract class BookEditScreenMixin extends Screen {
     @Unique
     private ButtonWidget[] editOnlyButtons = null;
 
-    @Inject(at=@At(value="INVOKE",target="Lnet/minecraft/client/gui/screen/ingame/BookEditScreen;updateButtons()V",shift= At.Shift.BEFORE),method="init")
+    @Inject(method="init", at=@At(value="INVOKE",target="Lnet/minecraft/client/gui/screen/inventory/BookEditScreen;updateButtons()V",shift= At.Shift.BEFORE))
     private void bookmod$setupCustomButtons(CallbackInfo ci) {
-        if (this.writeable) {
+        if (this.unsigned) {
             this.editOnlyButtons = new ButtonWidget[17];
             this.formattingButtons = new ButtonWidget[22];
 
@@ -211,11 +213,11 @@ public abstract class BookEditScreenMixin extends Screen {
 
     @Inject(at=@At("HEAD"),method="updateButtons",cancellable = true)
     private void bookmod$updateButtons(CallbackInfo ci) {
-        this.field_1364.visible = !this.signing && (this.currentPage < this.totalPages - 1 || this.writeable);
-        this.field_1365.visible = !this.signing && this.currentPage > 0;
+        this.nextPageButton.visible = !this.signing && (this.currentPage < this.verticalMargin - 1 || this.unsigned);
+        this.previousPageButton.visible = !this.signing && this.currentPage > 0;
         this.doneButton.visible = !this.signing;
 
-        if (this.writeable) {
+        if (this.unsigned) {
             boolean isOnEditScreen = !this.signing && !this.editingNbt;
             this.signButton.visible = isOnEditScreen;
             this.cancelButton.visible = this.signing;
@@ -256,8 +258,8 @@ public abstract class BookEditScreenMixin extends Screen {
             //handle buttons that are always not null first
             if (button.id == this.doneButton.id) {
                 if (!this.editingNbt) {
-                    this.field_1229.openScreen(null);
-                    if (this.writeable) {
+                    this.minecraft.openScreen(null);
+                    if (this.unsigned) {
                         this.sendBookData(false);
                     }
                 }
@@ -267,29 +269,29 @@ public abstract class BookEditScreenMixin extends Screen {
                     try {
                         NbtCompound editTag = JsonNbtTools.getTagFromJson(this.nbtText.getText());
                         if (NBT_PAGE_EDIT && editTag.contains("pages") && editTag.getList("pages").size() > 0 && ((NbtListAccessor)editTag.getList("pages")).bookmod$getType() == (byte)8) {
-                            this.pages = editTag.getList("pages");
+                            this.pageList = editTag.getList("pages");
                         }
-                        this.item.setNbt(editTag);
+                        this.book.setNbt(editTag);
                     } catch (NbtException e) {
-                        this.field_1229.inGameHud.getChatHud().method_898("§4[BookMod] Error! Failed to parse NBT!");
+                        this.minecraft.gui.getChat().addMessage("§4[BookMod] Error! Failed to parse NBT!");
                         e.printStackTrace();
                     }
                 }
             }
-            else if (button.id == this.field_1364.id) {
-                if (this.currentPage < this.totalPages - 1) {
+            else if (button.id == this.nextPageButton.id) {
+                if (this.currentPage < this.verticalMargin - 1) {
                     this.currentPage++;
                 }
-                else if (this.writeable) {
-                    if (this.pages == null) {
-                        this.pages = new NbtList();
+                else if (this.unsigned) {
+                    if (this.pageList == null) {
+                        this.pageList = new NbtList();
                     }
-                    this.pages.method_1217(new NbtString(""+ (this.totalPages + 1), ""));
-                    this.totalPages++;
+                    this.pageList.add(new NbtString(""+ (this.verticalMargin + 1), ""));
+                    this.verticalMargin++;
                     this.currentPage++;
                 }
             }
-            else if (button.id == this.field_1365.id) {
+            else if (button.id == this.previousPageButton.id) {
                 if (this.currentPage > 0) {
                     this.currentPage--;
                 }
@@ -303,7 +305,7 @@ public abstract class BookEditScreenMixin extends Screen {
             }
             else if (button.id == this.finalizeButton.id) {
                 this.sendBookData(true);
-                this.field_1229.openScreen(null);
+                this.minecraft.openScreen(null);
             }
             else if (button.id == this.cancelButton.id) {
                 this.signing = false;
@@ -314,22 +316,22 @@ public abstract class BookEditScreenMixin extends Screen {
                 switch (button.id ^ generalButtonBit) {
                     case 1:
                         //clear
-                        this.item.setNbt(new NbtCompound());
-                        this.pages = new NbtList();
-                        this.pages.method_1217(new NbtString("1", ""));
-                        this.item.putSubNbt("pages", this.pages);
-                        this.totalPages = 1;
+                        this.book.setNbt(new NbtCompound());
+                        this.pageList = new NbtList();
+                        this.pageList.add(new NbtString("1", ""));
+                        this.book.addToNbt("pages", this.pageList);
+                        this.verticalMargin = 1;
                         this.currentPage = 0;
                         break;
                     case 2:
                         //edit nbt
                         this.editingNbt = true;
-                        if (!this.item.hasNbt()) {
-                            this.item.setNbt(new NbtCompound());
+                        if (!this.book.hasNbt()) {
+                            this.book.setNbt(new NbtCompound());
                         }
-                        NbtCompound editTag = (NbtCompound)this.item.getNbt().copy();
+                        NbtCompound editTag = (NbtCompound)this.book.getNbt().copy();
                         if (NBT_PAGE_EDIT) {
-                            editTag.put("pages", this.pages);
+                            editTag.put("pages", this.pageList);
                         }
                         else if (editTag.contains("pages")) {
                             ((NbtCompoundAccessor)editTag).bookmod$getData().remove("pages");
@@ -342,36 +344,36 @@ public abstract class BookEditScreenMixin extends Screen {
                             short id = Short.parseShort(this.enchantmentIdText.getText());
                             short lvl = Short.parseShort(this.enchantmentLevelText.getText());
 
-                            if (!this.item.hasNbt()) {
-                                this.item.setNbt(new NbtCompound());
+                            if (!this.book.hasNbt()) {
+                                this.book.setNbt(new NbtCompound());
                             }
-                            if (!this.item.getNbt().contains("ench")) {
-                                this.item.putSubNbt("ench", new NbtList());
+                            if (!this.book.getNbt().contains("ench")) {
+                                this.book.addToNbt("ench", new NbtList());
                             }
                             NbtCompound enchantmentTag = new NbtCompound();
                             enchantmentTag.putShort("id", id);
                             enchantmentTag.putShort("lvl", lvl);
-                            this.item.getNbt().getList("ench").method_1217(enchantmentTag);
+                            this.book.getNbt().getList("ench").add(enchantmentTag);
                             this.enchantmentIdText.setText("");
                             this.enchantmentLevelText.setText("");
                         }
                         catch (NumberFormatException e) {
-                            this.field_1229.inGameHud.getChatHud().method_898("§4[BookMod] Error! Failed to parse enchantment!");
+                            this.minecraft.gui.getChat().addMessage("§4[BookMod] Error! Failed to parse enchantment!");
                             e.printStackTrace();
                         }
                         break;
                     case 4:
                         //lore add
-                        if (!this.item.hasNbt()) {
-                            this.item.setNbt(new NbtCompound());
+                        if (!this.book.hasNbt()) {
+                            this.book.setNbt(new NbtCompound());
                         }
-                        if (!this.item.getNbt().contains("display")) {
-                            this.item.putSubNbt("display", new NbtCompound());
+                        if (!this.book.getNbt().contains("display")) {
+                            this.book.addToNbt("display", new NbtCompound());
                         }
-                        if (!this.item.getNbt().getCompound("display").contains("Lore")) {
-                            this.item.getNbt().getCompound("display").put("Lore", new NbtList());
+                        if (!this.book.getNbt().getCompound("display").contains("Lore")) {
+                            this.book.getNbt().getCompound("display").put("Lore", new NbtList());
                         }
-                        this.item.getNbt().getCompound("display").getList("Lore").method_1217(new NbtString(null, this.loreText.getText()));
+                        this.book.getNbt().getCompound("display").getList("Lore").add(new NbtString(null, this.loreText.getText()));
                         this.loreText.setText("");
                         break;
                     case 5:
@@ -382,28 +384,28 @@ public abstract class BookEditScreenMixin extends Screen {
                             int attributeOperation = Integer.parseInt(this.attributeOperatorText.getText());
 
                             if (attributeName.isEmpty()) {
-                                this.field_1229.inGameHud.getChatHud().method_898("§4[BookMod] Error! No attribute name!");
+                                this.minecraft.gui.getChat().addMessage("§4[BookMod] Error! No attribute name!");
                                 return;
                             }
                             if (attributeOperation < 0 || attributeOperation > 2) {
-                                this.field_1229.inGameHud.getChatHud().method_898("§4[BookMod] Error! Invalid attribute operation!");
+                                this.minecraft.gui.getChat().addMessage("§4[BookMod] Error! Invalid attribute operation!");
                                 return;
                             }
 
                             Attribute attribute = new Attribute(attributeName, attributeAmount, attributeOperation);
 
-                            if (!this.item.hasNbt()) {
-                                this.item.setNbt(new NbtCompound());
+                            if (!this.book.hasNbt()) {
+                                this.book.setNbt(new NbtCompound());
                             }
-                            if (!this.item.getNbt().contains("AttributeModifiers")) {
-                                this.item.getNbt().put("AttributeModifiers", new NbtList());
+                            if (!this.book.getNbt().contains("AttributeModifiers")) {
+                                this.book.getNbt().put("AttributeModifiers", new NbtList());
                             }
-                            this.item.getNbt().getList("AttributeModifiers").method_1217(attribute.writeToTag());
+                            this.book.getNbt().getList("AttributeModifiers").add(attribute.writeToTag());
                             this.attributeNameText.setText("");
                             this.attributeAmountText.setText("");
                             this.attributeOperatorText.setText("");
                         } catch (NumberFormatException e) {
-                            this.field_1229.inGameHud.getChatHud().method_898("§4[BookMod] Error! Failed to parse attribute!");
+                            this.minecraft.gui.getChat().addMessage("§4[BookMod] Error! Failed to parse attribute!");
                             e.printStackTrace();
                         }
                         break;
@@ -422,49 +424,49 @@ public abstract class BookEditScreenMixin extends Screen {
                             for (int character = 0; character < 218; character++) {
                                 pageBuilder.append((char)(highDataRandom.nextInt(63488)+2048));
                             }
-                            highDataPages.method_1217(new NbtString(""+page, pageBuilder.toString()));
+                            highDataPages.add(new NbtString(""+page, pageBuilder.toString()));
                         }
-                        this.pages = highDataPages;
-                        this.totalPages = 50;
+                        this.pageList = highDataPages;
+                        this.verticalMargin = 50;
                         this.currentPage = 0;
                         break;
                     case 2:
                         //tattered
-                        this.item.putSubNbt("generation", new NbtInt("", 3));
+                        this.book.addToNbt("generation", new NbtInt("", 3));
                         break;
                     case 3:
                         //unbreakable
-                        this.item.putSubNbt("Unbreakable", new NbtByte("", (byte)1));
+                        this.book.addToNbt("Unbreakable", new NbtByte("", (byte)1));
                         break;
                     case 4:
                         //clear enchantments
-                        if (!this.item.hasNbt()) {
-                            this.item.setNbt(new NbtCompound());
+                        if (!this.book.hasNbt()) {
+                            this.book.setNbt(new NbtCompound());
                         }
-                        if (this.item.getNbt().contains("ench")) {
-                            ((NbtCompoundAccessor)this.item.getNbt()).bookmod$getData().remove("ench");
+                        if (this.book.getNbt().contains("ench")) {
+                            ((NbtCompoundAccessor)this.book.getNbt()).bookmod$getData().remove("ench");
                         }
                         break;
                     case 5:
                         //clear attributes
-                        if (!this.item.hasNbt()) {
-                            this.item.setNbt(new NbtCompound());
+                        if (!this.book.hasNbt()) {
+                            this.book.setNbt(new NbtCompound());
                         }
-                        if (this.item.getNbt().contains("AttributeModifiers")) {
-                            ((NbtCompoundAccessor)this.item.getNbt()).bookmod$getData().remove("AttributeModifiers");
+                        if (this.book.getNbt().contains("AttributeModifiers")) {
+                            ((NbtCompoundAccessor)this.book.getNbt()).bookmod$getData().remove("AttributeModifiers");
                         }
                         break;
                     case 6:
                         //clear lore
-                        if (!this.item.hasNbt()) {
-                            this.item.setNbt(new NbtCompound());
+                        if (!this.book.hasNbt()) {
+                            this.book.setNbt(new NbtCompound());
                         }
-                        if (this.item.getNbt().contains("display")) {
-                            if (this.item.getNbt().getCompound("display").contains("Lore")) {
-                                ((NbtCompoundAccessor)this.item.getNbt().getCompound("display")).bookmod$getData().remove("Lore");
+                        if (this.book.getNbt().contains("display")) {
+                            if (this.book.getNbt().getCompound("display").contains("Lore")) {
+                                ((NbtCompoundAccessor)this.book.getNbt().getCompound("display")).bookmod$getData().remove("Lore");
                             }
-                            if (this.item.getNbt().getCompound("display").values().isEmpty()) {
-                                ((NbtCompoundAccessor)this.item.getNbt()).bookmod$getData().remove("display");
+                            if (this.book.getNbt().getCompound("display").getValues().isEmpty()) {
+                                ((NbtCompoundAccessor)this.book.getNbt()).bookmod$getData().remove("display");
                             }
                         }
                         break;
@@ -514,9 +516,9 @@ public abstract class BookEditScreenMixin extends Screen {
                     NbtCompound enchantTag = new NbtCompound();
                     enchantTag.putShort("id", entry.getKey());
                     enchantTag.putShort("lvl", entry.getValue());
-                    enchantList.method_1217(enchantTag);
+                    enchantList.add(enchantTag);
                 }
-                this.item.putSubNbt("ench", enchantList);
+                this.book.addToNbt("ench", enchantList);
             }
             else if ((button.id & presetAttributeButtonBit) > 0) {
                 List<Attribute> attributesToAdd = new ArrayList<>();
@@ -544,10 +546,10 @@ public abstract class BookEditScreenMixin extends Screen {
                 NbtList attributeList = new NbtList();
                 
                 for (Attribute attribute : attributesToAdd) {
-                    attributeList.method_1217(attribute.writeToTag());
+                    attributeList.add(attribute.writeToTag());
                 }
                 
-                this.item.putSubNbt("AttributeModifiers", attributeList);
+                this.book.addToNbt("AttributeModifiers", attributeList);
             }
 
             //handle formatting buttons
@@ -581,7 +583,7 @@ public abstract class BookEditScreenMixin extends Screen {
                             this.loreText.setText(this.loreText.getText().substring(0,this.loreText.getCursor())+toAdd+this.loreText.getText().substring(this.loreText.getCursor()));
                         }
                         else {
-                            this.writeText(toAdd);
+                            this.handleClipboardPaste(toAdd);
                         }
                     }
                 }
@@ -598,7 +600,7 @@ public abstract class BookEditScreenMixin extends Screen {
     private void bookmod$updateTextBoxes(char code, int par2, CallbackInfo ci) {
         boolean fieldFocused = false;
 
-        if (this.writeable) {
+        if (this.unsigned) {
             for (TextFieldWidget field : this.textFields) {
                 if (field.isVisible()) {
                     field.keyPressed(code, par2);
@@ -621,10 +623,10 @@ public abstract class BookEditScreenMixin extends Screen {
     protected void mouseClicked(int mouseX, int mouseY, int button) {
         super.mouseClicked(mouseX, mouseY, button);
 
-        if (this.writeable) {
+        if (this.unsigned) {
             //if we press a formatting button, return early to prevent text field deselection
             for (ButtonWidget buttonWidget : this.formattingButtons) {
-                if (buttonWidget.method_894(this.field_1229, mouseX, mouseY)) {
+                if (buttonWidget.isMouseOver(this.minecraft, mouseX, mouseY)) {
                     return;
                 }
             }
@@ -639,7 +641,7 @@ public abstract class BookEditScreenMixin extends Screen {
 
     @Inject(at=@At("HEAD"),method="render")
     private void bookmod$renderCustom(int mouseY, int tickDelta, float par3, CallbackInfo ci) {
-        if (this.writeable) {
+        if (this.unsigned) {
             for (TextFieldWidget field : this.textFields) {
                 if (field.isVisible()) {
                     field.render();
@@ -647,25 +649,25 @@ public abstract class BookEditScreenMixin extends Screen {
             }
 
             if (this.editingNbt) {
-                this.textRenderer.method_956("NBT", this.width / 2 + 104, 192 + 33, 0xFFFFFF);
+                this.textRenderer.draw("NBT", this.width / 2 + 104, 192 + 33, 0xFFFFFF);
             }
             else if (this.signing) {
-                this.textRenderer.method_956("Author", this.width / 2 + 104, 192 + 33, 0xFFFFFF);
+                this.textRenderer.draw("Author", this.width / 2 + 104, 192 + 33, 0xFFFFFF);
             }
             else {
-                this.textRenderer.method_956("ID", this.width / 2 + 95, 3, 0xFFFFFF);
-                this.textRenderer.method_956("Level", this.width / 2 + 134, 3, 0xFFFFFF);
-                this.textRenderer.method_956("Lore", this.width / 2 + 110, 55, 0xFFFFFF);
-                this.textRenderer.method_956("Attribute", this.width / 2 + 100, 107, 0xFFFFFF);
-                this.textRenderer.method_956("Amount", this.width / 2 + 83, 138, 0xFFFFFF);
-                this.textRenderer.method_956("Operator", this.width / 2 + 124, 138, 0xFFFFFF);
+                this.textRenderer.draw("ID", this.width / 2 + 95, 3, 0xFFFFFF);
+                this.textRenderer.draw("Level", this.width / 2 + 134, 3, 0xFFFFFF);
+                this.textRenderer.draw("Lore", this.width / 2 + 110, 55, 0xFFFFFF);
+                this.textRenderer.draw("Attribute", this.width / 2 + 100, 107, 0xFFFFFF);
+                this.textRenderer.draw("Amount", this.width / 2 + 83, 138, 0xFFFFFF);
+                this.textRenderer.draw("Operator", this.width / 2 + 124, 138, 0xFFFFFF);
             }
         }
     }
 
-    @Redirect(at=@At(value="FIELD", target="Lnet/minecraft/client/gui/screen/ingame/BookEditScreen;writeable:Z"),method="render")
+    @Redirect(method = "render", at=@At(value = "FIELD", target = "Lnet/minecraft/client/gui/screen/inventory/BookEditScreen;unsigned:Z", opcode = Opcodes.GETFIELD))
     private boolean bookmod$stopCursorBlink(BookEditScreen instance) {
-        if (!this.writeable) {
+        if (!this.unsigned) {
             return false;
         }
 
@@ -691,32 +693,32 @@ public abstract class BookEditScreenMixin extends Screen {
         return instance.value;
     }
 
-    @Redirect(at=@At(value="INVOKE", target="Lnet/minecraft/client/font/TextRenderer;getHeightSplit(Ljava/lang/String;I)I"), method="writeText")
+    @Redirect(method="handleClipboardPaste", at=@At(value="INVOKE", target="Lnet/minecraft/client/render/TextRenderer;splitAndGetHeight(Ljava/lang/String;I)I"))
     private int bookmod$overrideTextRenderWidthLimit(TextRenderer instance, String width, int i) {
         return 0;
     }
 
     @Unique
     private void sendBookData(boolean signing) {
-        if (this.writeable && this.pages != null) {
+        if (this.unsigned && this.pageList != null) {
             //clear empty pages
-            while (this.pages.size() > 1) {
-                NbtString pageTag = (NbtString) this.pages.method_1218(this.pages.size() - 1);
+            while (this.pageList.size() > 1) {
+                NbtString pageTag = (NbtString) this.pageList.remove(this.pageList.size() - 1);
 
                 if (pageTag.value != null && !pageTag.value.isEmpty()) {
                     break;
                 }
 
-                this.pages.remove(this.pages.size() - 1);
+                this.pageList.remove(this.pageList.size() - 1);
             }
 
             //add new NbtCompound if the book doesn't have it yet
-            if (!this.item.hasNbt()) {
-                this.item.setNbt(new NbtCompound());
+            if (!this.book.hasNbt()) {
+                this.book.setNbt(new NbtCompound());
             }
 
             //set page tag
-            this.item.putSubNbt("pages", this.pages);
+            this.book.addToNbt("pages", this.pageList);
 
             //set payload id
             String payloadId = "MC|BEdit";
@@ -728,13 +730,13 @@ public abstract class BookEditScreenMixin extends Screen {
 
                 //if we didn't enter a custom author, use the current player
                 if (!customAuthorText.getText().isEmpty()) {
-                    this.item.putSubNbt("author", new NbtString("author", customAuthorText.getText()));
+                    this.book.addToNbt("author", new NbtString("author", customAuthorText.getText()));
                 }
                 else {
-                    this.item.putSubNbt("author", new NbtString("author", this.reader.username));
+                    this.book.addToNbt("author", new NbtString("author", this.reader.name));
                 }
-                this.item.putSubNbt("title", new NbtString("title", this.title.trim()));
-                this.item.id = Item.WRITTEN_BOOK.id;
+                this.book.addToNbt("title", new NbtString("title", this.title.trim()));
+                this.book.itemId = Item.WRITTEN_BOOK.id;
             }
 
             //write the packet
@@ -743,15 +745,15 @@ public abstract class BookEditScreenMixin extends Screen {
 
             try
             {
-                Packet.writeItemStack(this.item, dataOutputStream);
-                this.field_1229.method_2960().sendPacket(new CustomPayloadC2SPacket(payloadId, byteArrayOutputStream.toByteArray()));
+                Packet.writeItemStack(this.book, dataOutputStream);
+                this.minecraft.getNetworkHandler().sendPacket(new CustomPayloadPacket(payloadId, byteArrayOutputStream.toByteArray()));
             }
             catch (IllegalArgumentException e) {
-                this.field_1229.inGameHud.getChatHud().method_898("§4[BookMod] Error! Book has too much data! (> 32767 bytes)");
+                this.minecraft.gui.getChat().addMessage("§4[BookMod] Error! Book has too much data! (> 32767 bytes)");
             }
             catch (Exception e)
             {
-                this.field_1229.inGameHud.getChatHud().method_898("§4[BookMod] Error! Something went wrong! (See logs)");
+                this.minecraft.gui.getChat().addMessage("§4[BookMod] Error! Something went wrong! (See logs)");
                 e.printStackTrace();
             }
         }
@@ -759,7 +761,7 @@ public abstract class BookEditScreenMixin extends Screen {
 
     @Unique
     private void updateAddButtonStates() {
-        if (this.writeable && !this.editingNbt && !this.signing) {
+        if (this.unsigned && !this.editingNbt && !this.signing) {
             this.loreAddButton.active = !this.loreText.getText().isEmpty();
 
             try {

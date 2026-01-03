@@ -2,12 +2,14 @@ package com.terriblefriends.bookmod.mixin.nbt;
 
 import net.minecraft.nbt.NbtByteArray;
 import org.spongepowered.asm.mixin.Mixin;
+import org.spongepowered.asm.mixin.Unique;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 
 @Mixin(NbtByteArray.class)
 public class NbtByteArrayMixin {
+    @Unique
     private final NbtByteArray NBA_instance = (NbtByteArray) (Object) this;
 
     @Inject(at=@At("HEAD"),method="toString",cancellable = true)

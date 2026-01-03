@@ -2,9 +2,9 @@ package com.terriblefriends.bookmod.mixin;
 
 import com.terriblefriends.bookmod.surrogate.TextFieldWidgetSurrogate;
 import com.terriblefriends.bookmod.surrogate.TextRendererSurrogate;
-import net.minecraft.client.font.TextRenderer;
+import net.minecraft.SharedConstants;
 import net.minecraft.client.gui.widget.TextFieldWidget;
-import net.minecraft.util.SharedConstants;
+import net.minecraft.client.render.TextRenderer;
 import org.spongepowered.asm.mixin.Final;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Shadow;
@@ -30,7 +30,7 @@ public abstract class TextFieldWidgetMixin implements TextFieldWidgetSurrogate {
         this.disableFormatting = v;
     }
 
-    @Redirect(at=@At(value="INVOKE", target="Lnet/minecraft/util/SharedConstants;stripInvalidChars(Ljava/lang/String;)Ljava/lang/String;"), method="write")
+    @Redirect(method="write", at=@At(value="INVOKE", target="Lnet/minecraft/SharedConstants;stripInvalidChars(Ljava/lang/String;)Ljava/lang/String;"))
     private String bookmod$checkDisabledInvalidStripping(String s) {
         if (this.disableInvalidStripping) {
             return s;

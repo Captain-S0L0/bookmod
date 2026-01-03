@@ -288,7 +288,7 @@ public class JsonNbtTools
                     throw this.createException("Unable to insert " + j + " into ListTag of type " + i);
                 }
 
-                list.method_1217(element);
+                list.add(element);
 
                 if (!this.consumeElementSplit())
                 {
